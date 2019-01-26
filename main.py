@@ -74,12 +74,6 @@ for epoch in range(opt.epoches):
     itr: int = 0 # number of iteration
 
     for imgs, _ in t_generator:  # doing this way we get more performance, since we generate one batch at a time
-        # print("Iteration {} of {}.".format(itr,total_step//512))
-        if itr == 0 and epoch % 10 == 0: # saving in each opt.attn_step batches
-            save_attn = os.path.join(maps_folder, "images_{}_{}".format(epoch, itr)), 'cifar-10', (100,4)
-        else:
-            save_attn = None
-
         vae.zero_grad()
 
         imgs_ = imgs.squeeze(0)
@@ -94,8 +88,9 @@ for epoch in range(opt.epoches):
         vae_loss.backward()
         vae.step()
 
-        if not save_attn is None:
-            save_attn_map(recon_batch, imgs_, save_attn)
+        if itr == 0 and epoch % 10 == 0: # saving in each opt.attn_step batches
+            save_attn = os.path.join(maps_folder, "images_{}_{}".format(epoch, itr)), 'cifar-10', (100,4)
+            save_attn_map(recon_batch, imgs_, save_attn)         
 
         itr += 1
     

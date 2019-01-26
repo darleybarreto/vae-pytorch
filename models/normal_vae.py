@@ -36,13 +36,8 @@ class GaussianVAE(VAE):
         super(GaussianVAE, self).__init__(h_dim, z_dim)
 
     def encode(self, x):
-        conv1 = self.relu(self.bn1(self.conv1(x)))
-        conv2 = self.relu(self.bn2(self.conv2(conv1)))
-        conv3 = self.relu(self.bn3(self.conv3(conv2)))
-        conv4 = self.relu(self.bn4(self.conv4(conv3))).view(-1, 8 * 8 * 16)
-
-        fc1 = self.relu(self.fc_bn1(self.fc1(conv4)))
-        #mu, sigma, alpha. beta
+        fc1 = self._encode(x)
+        #mu, sigma
         return self.fc41(fc1), self.softplus(self.fc42(fc1))
 
     def reparameterize(self, mu, logvar):
