@@ -77,7 +77,7 @@ class GaussianVAE(VAE):
             # - so eps is [batche_size,ZDIMS] with all elements drawn from a mean 0
             #   and stddev 1 normal distribution that is batche_size samples
             #   of random ZDIMS-float vectors
-            eps = Variable(std.data.new(std.size()).normal_())
+            eps = Variable(std.data.new(std.size()).normal_(),requires_grad=False)
             # - sample from a normal distribution with standard
             #   deviation = std and mean = mu by multiplying mean 0
             #   stddev 1 sample with desired std and mu, see

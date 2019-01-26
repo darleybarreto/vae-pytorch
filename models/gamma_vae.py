@@ -50,7 +50,7 @@ class GammaVAE(VAE):
         # sample the \hat{z} ~ Gamma(shape + B, 1.) to guarantee acceptance
         new_alpha = alpha.clone()
         new_alpha = Variable(new_alpha + self.gamma_shape,requires_grad=False)
-        z_hat = Gamma(alpha + self.gamma_shape, torch.ones(alpha.shape)).sample()
+        z_hat = Gamma(new_alpha, torch.ones(alpha.shape)).sample()
         # compute the epsilon corresponding to \hat{z}; this epsilon is 'accepted'
         # \epsilon = h_inverse(z_tilde; shape + B)
         eps = self.compute_h_inverse(z_hat, alpha + self.gamma_shape)

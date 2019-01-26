@@ -4,7 +4,7 @@ import numpy as np
 
 import torch
 from torch.autograd import Variable
-from torch.utils.data import DataLoader, sampler
+from torch.utils.data import DataLoader
 from torchvision import datasets as dsets, transforms
 
 from models.gamma_vae import GammaVAE, compute_gamma
