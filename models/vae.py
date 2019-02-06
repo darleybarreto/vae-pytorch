@@ -2,9 +2,47 @@ import torch
 from torch import nn
 from torch.autograd import Variable
 
-class VAE(nn.Module):
+def choose_vae(dataset):
+    return MLPVAE if dataset == 'mnist' else ConvVAE
+
+class MLPVAE(nn.Module):
+    """
+    Based on https://github.com/pytorch/examples/tree/master/vae
+
+    :h_dim:             size of the hidden encoder/decoder representation
+    :z_dim:             size of the latent space
+    """
+    def __init__(self, h_dim: int = 400, z_dim: int = 20, im_shape: tuple = (28,28)):
+        super(MLPVAE, self).__init__()
+
+        self.w,self.h  = im_shape
+
+        self.fc1 = nn.Linear(self.w*self.h, h_dim)
+        
+        self.fc21 = nn.Linear(h_dim, z_dim)
+        self.fc22 = nn.Linear(h_dim, z_dim)
+        # self.fc23 = nn.Linear(h_dim, z_dim)
+        # self.fc24 = nn.Linear(h_dim, z_dim)
+
+        self.fc3 = nn.Linear(z_dim, h_dim)
+        self.fc4 = nn.Linear(h_dim, self.w*self.h)
+
+        self.relu = nn.ReLU()
+        self.sigmoid = nn.Sigmoid()
+        self.softplus = nn.Softplus()
+
+    def _encode(self, x):
+        h1 = self.relu(self.fc1(x))
+        return h1
+
+    def decode(self, z):
+        h3 = self.relu(self.fc3(z))
+        return self.sigmoid(self.fc4(h3))
+
+
+class ConvVAE(nn.Module):
     def __init__(self, h_dim=512, z_dim=512):
-        super(VAE, self).__init__()
+        super(ConvVAE, self).__init__()
         
         # Encoder
         self.conv1 = nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1, bias=False)
@@ -18,8 +56,10 @@ class VAE(nn.Module):
 
         self.fc1 = nn.Linear(8 * 8 * 16, h_dim)
         self.fc_bn1 = nn.BatchNorm1d(h_dim)
-        self.fc41 = nn.Linear(h_dim, z_dim)
-        self.fc42 = nn.Linear(h_dim, z_dim)
+        self.fc21 = nn.Linear(h_dim, z_dim)
+        self.fc22 = nn.Linear(h_dim, z_dim)
+        # self.fc43 = nn.Linear(h_dim, z_dim)
+        # self.fc44 = nn.Linear(h_dim, z_dim)
 
         # Decoder
         self.fc3 = nn.Linear(z_dim, h_dim)
@@ -56,3 +96,4 @@ class VAE(nn.Module):
         conv7 = self.relu(self.bn7(self.conv7(conv6)))
         conv8 = self.sigmoid(self.conv8(conv7))
         return conv8.view(-1, 3, 32, 32)
+      
