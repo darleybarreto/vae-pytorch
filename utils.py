@@ -9,6 +9,10 @@ import torch
 from torch import optim
 from torchvision.utils import make_grid
 
+
+from models.gamma_vae import gamma_vae
+from models.normal_vae import gaussian_vae
+
 import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
@@ -68,7 +72,7 @@ class Model(object):
     def __init__(self, VAE, z_dim):
         self.vae = VAE(z_dim=z_dim)
         self.vae_optimizer = optim.Adam(self.vae.parameters(),lr=1e-3,weight_decay=5e-4)
-
+        
         if torch.cuda.is_available():
             self.vae = self.vae.cuda()
 
@@ -83,6 +87,36 @@ class Model(object):
 
     def train(self):
         self.vae.train()
+
+    def eval(self):
+        self.vae.eval()
+
+    def sample(self, z):
+        return self.vae.decode(z)
+
+    def representation(self, x):
+        encoded = self.vae.encode(x)
+        z = self.vae.reparameterize(*encoded)
+        return z.data
+
+    @staticmethod
+    def load(path: str):
+        checkpoint = torch.load(path)
+        
+        dataset = checkpoint['dataset']
+        model = checkpoint['model']
+
+        if model == 'normal':
+            vae_model = gaussian_vae(dataset)
+        else:
+            vae_model = gamma_vae(dataset)
+
+        self = Model(vae_model,checkpoint['z_dim'])
+
+        self.vae.load_state_dict(checkpoint['model_vae_state_dict'])
+        self.vae_optimizer.load_state_dict(checkpoint['optimizer_vae_state_dict'])
+
+        return self
 
 class Logger(object):
     """

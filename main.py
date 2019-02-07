@@ -75,7 +75,8 @@ if not os.path.isdir(models_folder):
 
 print("{} model choosed.\n".format(opt.model))
 
-vae = Model(vae_model,z_dim=4)
+z_dim= 4
+vae = Model(vae_model,z_dim=z_dim)
 vae.train()
 
 total_step: int = len(dataset)
@@ -101,8 +102,6 @@ for epoch in range(opt.epoches):
         recon_batch, vae_loss = compute_vae(vae, imgs_, metrics)
         vae_loss.backward()
         vae.step()
-        # print(vae_loss.item())
-        # assert False
         
         if itr == 0 and epoch % 50 == 0: # saving in each opt.attn_step batches
             save_attn = os.path.join(maps_folder, "images_{}_{}".format(epoch, itr)), opt.dataset, (100,4)
@@ -119,11 +118,15 @@ for epoch in range(opt.epoches):
         is_best = False
     
     internal_state = {
+        'model':opt.model,
+        'dataset': opt.dataset,
+        'z_dim': z_dim,
         'current_epoch': epoch,
         'best_epoch': best_epoch,
         'best_loss': best_loss,
         'model_vae_state_dict': vae.vae.state_dict(),
         'optimizer_vae_state_dict': vae.vae_optimizer.state_dict()
+
     }
 
     save_model(internal_state, models_folder, is_best, epoch, opt.model)
