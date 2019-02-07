@@ -22,7 +22,7 @@ parser.add_argument('--model', type=str, default="normal",
 parser.add_argument('--dataset', type=str, default="mnist",
 					help='Dataset (cifar-10 or mnist)')
 
-parser.add_argument('--epoches', type=int, default=10000,
+parser.add_argument('--epoches', type=int, default=1001,
 					help='number of epoches')
 
 opt = parser.parse_args()
@@ -75,7 +75,7 @@ if not os.path.isdir(models_folder):
 
 print("{} model choosed.\n".format(opt.model))
 
-vae = Model(vae_model,z_dim=20)
+vae = Model(vae_model,z_dim=4)
 vae.train()
 
 total_step: int = len(dataset)
@@ -104,7 +104,7 @@ for epoch in range(opt.epoches):
         # print(vae_loss.item())
         # assert False
         
-        if itr == 0 and epoch % 10 == 0: # saving in each opt.attn_step batches
+        if itr == 0 and epoch % 50 == 0: # saving in each opt.attn_step batches
             save_attn = os.path.join(maps_folder, "images_{}_{}".format(epoch, itr)), opt.dataset, (100,4)
             save_attn_map(recon_batch, imgs_, save_attn)         
 
