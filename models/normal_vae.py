@@ -1,27 +1,17 @@
-import math
+# import math
 
 import torch
 from torch import nn
 from torch.autograd import Variable
-from torch.nn import functional as F
 
 import numpy as np
 
 from .vae import choose_vae
 
-def normal_recons_loss(recon_x, x):
-    # https://github.com/bjlkeng/sandbox/blob/master/notebooks/variational_autoencoder-svhn/model_fit.ipynb
-    # var_epsilon = 0.010
+import sys
+sys.path.append("..")
 
-    # loss = (  0.5 * math.log(2 * math.pi)
-    #         + 0.5 * K.log(_x_decoded_var + var_epsilon)
-    #         + 0.5 * K.square(x - x_decoded_mean) / (_x_decoded_var + var_epsilon))
-    
-    # loss = torch.sum(loss, axis=-1)
-    # return loss
-
-    return F.mse_loss(recon_x, x, reduction='sum')
-    # return F.binary_cross_entropy(recon_x, x, reduction='sum')
+from utils import recons_loss
 
 def vae_gaussian_kl_loss(mu, logvar):
     # see Appendix B from VAE paper:
@@ -32,11 +22,11 @@ def vae_gaussian_kl_loss(mu, logvar):
 
     return KLD
 
-def evaluate_gaussian_dist(loc, scale, z):
-    var = torch.pow(scale, 2)
-    return -0.5 * torch.log(2 * np.pi * var) - torch.pow(z - loc, 2) / (2 * var)
+# def evaluate_gaussian_dist(loc, scale, z):
+#     var = torch.pow(scale, 2)
+#     return -0.5 * torch.log(2 * np.pi * var) - torch.pow(z - loc, 2) / (2 * var)
 
-bernoulli_log_lik =  nn.BCEWithLogitsLoss(reduction='none')
+# bernoulli_log_lik =  nn.BCEWithLogitsLoss(reduction='none')
 
 def compute_gaussian(model, imgs_, metrics):
     recon_batch, z, mu, sigma = model(imgs_)
@@ -68,7 +58,7 @@ def compute_gaussian(model, imgs_, metrics):
     # see in bellow for the general formulation:
     # https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence#Multivariate_normal_distributions
     
-    recons_loss = normal_recons_loss(recon_batch, imgs_)
+    recons_loss = recons_loss(recon_batch, imgs_)
     kl_loss = vae_gaussian_kl_loss(mu, sigma)
 
     metrics[0].update(recons_loss.item())
@@ -89,7 +79,6 @@ def gaussian_vae(vae_name: str):
             fc1 = self._encode(x)
             #mu, sigma
             return self.fc21(fc1), self.softplus(self.fc22(fc1))
-            # return self.fc41(fc1), self.softplus(self.fc42(fc1)), self.softplus(self.fc43(fc1)), self.softplus(self.fc44(fc1))
 
         def reparameterize(self, mu, logvar):
             """THE REPARAMETERIZATION IDEA:

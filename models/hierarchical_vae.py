@@ -9,61 +9,44 @@ sys.path.append("..")
 
 from utils import recons_loss
 
-def evaluate_gamma_dist(x, alpha, beta):
-    loss = -torch.lgamma(alpha) - alpha * torch.log(alpha) \
-        + (alpha - 1.) * torch.log(x) - x / beta
-    
-    return torch.sum(loss)
+from .gamma_vae import vae_gamma_kl_loss
+from .normal_vae import vae_gaussian_kl_loss
 
-def I_function(a,b,c,d):
-    return - c * d / a - b * torch.log(a) - torch.lgamma(b) + (b-1)*(torch.digamma(d) + torch.log(c))
-
-def vae_gamma_kl_loss(a,b,c,d):
-    """
-    https://stats.stackexchange.com/questions/11646/kullback-leibler-divergence-between-two-gamma-distributions
-    b and d are Gamma shape parameters and
-    a and c are scale parameters.
-    (All, therefore, must be positive.)
-    """
-    
-    a = 1/a
-    c = 1/c
-    losses = I_function(c,d,c,d) - I_function(a,b,c,d)
-
-    return torch.sum(losses)
-
-def compute_gamma(model, imgs_, metrics):
-    recon_batch, z, alpha, beta = model(imgs_)
+def compute_hierarchical(model, imgs_, metrics):
+    recon_batch, z, mu_hat, logvar_hat, alpha, beta, mu, sigma = model(imgs_)
 
     likelihood = recons_loss(recon_batch, imgs_)
 
-    # posterior = evaluate_gamma_dist(z, alpha, beta)
-    # prior = evaluate_gamma_dist(z, 1 + torch.ones(alpha.shape), torch.ones(alpha.shape))
-    # vae_loss = likelihood + prior - posterior
-
     kl_gamma = vae_gamma_kl_loss(alpha, beta, torch.Tensor([2.]), torch.Tensor([1.])) #prior p(z|alpha,beta)) = p(z|(2,1)) 
-    vae_loss = likelihood + kl_gamma
+
+    kl_normal = vae_gaussian_kl_loss(mu_hat, logvar_hat)
+
+    kl_final = vae_gaussian_kl_loss(mu, sigma)
+    final_vae_loss = likelihood + kl_gamma + kl_normal + kl_final
 
     metrics[0].update(likelihood.item(),imgs_.size(0))
     metrics[1].update(kl_gamma.item(),imgs_.size(0))
+    metrics[2].update(kl_normal.item(),imgs_.size(0))
+    metrics[3].update(kl_final.item(),imgs_.size(0))
+    metrics[4].update(final_vae_loss.item(),imgs_.size(0))
 
-    return recon_batch, vae_loss
+    return recon_batch, final_vae_loss
 
-def gamma_vae(vae_name: str):
+def hierarchical_vae(vae_name: str):
     VAE = choose_vae(vae_name)
 
-    class GammaVAE(VAE):
+    class HierarchicalVAE(VAE):
         def __init__(self, h_dim=512, z_dim=32, gamma_shape = 8):
-            super(GammaVAE, self).__init__(h_dim, z_dim)
+            super(HierarchicalVAE, self).__init__(h_dim, z_dim)
             
             self.gamma_shape = gamma_shape
 
         def encode(self, x):
             fc1 = self._encode(x)    
-            #alpha, beta
-            return self.softplus(self.fc21(fc1)), self.softplus(self.fc22(fc1))
+            #mu, simg,a alpha, beta
+            return self.fc41(fc1), self.softplus(self.fc42(fc1)), self.softplus(self.fc43(fc1)), self.softplus(self.fc44(fc1))
 
-        def reparameterize(self, alpha, beta):
+        def reparameterize_gamma(self, alpha, beta):
             """
             :alpha:  is the shape/concentration
             :beta:   is the rate/(1/scale)
@@ -79,6 +62,16 @@ def gamma_vae(vae_name: str):
             z_tilde = self.compute_h(eps, alpha + self.gamma_shape)
             return z_tilde/beta
 
+        def reparameterize_gaussian(self, mu, logvar):
+            if self.training:
+                std = logvar.mul(0.5).exp_()  # type: Variable
+                eps = Variable(std.data.new(std.size()).normal_(),requires_grad=False)
+
+                return eps.mul(std).add_(mu)
+
+            else:
+                return mu
+
         def compute_h(self, eps, alpha):
             return (alpha - 1. / 3.) * (1. + eps / torch.sqrt(9. * alpha - 3.))**3
 
@@ -86,9 +79,13 @@ def gamma_vae(vae_name: str):
             return torch.sqrt(9. * alpha - 3.) * ((z / (alpha - 1. / 3.))**(1. / 3.) - 1.)
 
         def forward(self, x):
-            alpha, beta = self.encode(x)
-            z = self.reparameterize(alpha, beta)
+            mu_hat, logvar_hat, aplha, beta = self.encode(x)
 
-            return self.decode(z), z, alpha, beta
+            mu = self.reparameterize_gaussian(mu_hat, logvar_hat)
+            sigma = self.reparameterize_gamma(aplha, beta)
 
-    return GammaVAE
+            z = self.reparameterize_gaussian(mu, sigma)
+
+            return self.decode(z), z, mu_hat, logvar_hat, aplha, beta, mu, sigma
+
+    return HierarchicalVAE

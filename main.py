@@ -10,6 +10,8 @@ from torchvision import datasets as dsets, transforms
 
 from models.gamma_vae import gamma_vae, compute_gamma
 from models.normal_vae import gaussian_vae, compute_gaussian
+from models.hierarchical import hierarchical_vae, compute_hierarchical
+
 from utils import AverageMeter, Logger, Model, ReshapeTransform, save_attn_map, save_model
 
 if torch.cuda.is_available(): torch.set_default_tensor_type('torch.cuda.FloatTensor')
@@ -17,13 +19,19 @@ if torch.cuda.is_available(): torch.set_default_tensor_type('torch.cuda.FloatTen
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--model', type=str, default="normal",
-					help='VAE type (normal or gamma)')
+					help='VAE type (normal, gamma or hierarchical)')
 
 parser.add_argument('--dataset', type=str, default="mnist",
 					help='Dataset (cifar-10 or mnist)')
 
 parser.add_argument('--epoches', type=int, default=1001,
 					help='number of epoches')
+
+parser.add_argument('--b_size', type=int, default=128,
+					help='batch size')                    
+
+parser.add_argument('--z_dim', type=int, default=4,
+					help='size of the latent space')  
 
 opt = parser.parse_args()
 
@@ -42,12 +50,12 @@ elif opt.dataset == 'mnist':
     if os.path.exists(os.path.join(".","data","raw")):
         shutil.rmtree(os.path.join(".","data","raw"))
 
-t_generator = DataLoader(dataset, batch_size=128, num_workers=8, shuffle=True)
+t_generator = DataLoader(dataset, batch_size=opt.b_size, num_workers=8, shuffle=True)
 
 if os.path.exists(os.path.join(data_folder,'cifar-10-python.tar.gz')):
     os.remove(os.path.join(data_folder,'cifar-10-python.tar.gz'))
 
-assert opt.model in ['normal', 'gamma'], "Model {} is not supported.".format(opt.model)
+assert opt.model in ['normal', 'gamma', 'hierarchical'], "Model {} is not supported.".format(opt.model)
 
 recons_meter = AverageMeter()
 kl_meter = AverageMeter()
@@ -65,6 +73,19 @@ elif opt.model == 'gamma':
     train_logger = Logger(os.path.join(data_folder,'train_gamma.log'),logger_list)
     compute_vae = compute_gamma
 
+elif opt.model == 'hierarchical':
+    logger_list = ["Epoch","Recons","KL Gamma", "KL Gaussian", "KL Final","Full"]
+
+    kl_normal_meter = AverageMeter()
+    kl_final_meter = AverageMeter()
+    full_meter = AverageMeter()
+
+    metrics += [kl_normal_meter, kl_final_meter, full_meter]
+
+    vae_model = hierarchical_vae(opt.dataset)
+    train_logger = Logger(os.path.join(data_folder,'train_hierarchical.log'),logger_list)
+    compute_vae = compute_hierarchical
+
 maps_folder = os.path.join(data_folder, "maps", opt.model)
 if not os.path.isdir(maps_folder):
     os.makedirs(maps_folder)
@@ -75,8 +96,7 @@ if not os.path.isdir(models_folder):
 
 print("{} model choosed.\n".format(opt.model))
 
-z_dim= 4
-vae = Model(vae_model,z_dim=z_dim)
+vae = Model(vae_model,z_dim=opt.z_dim)
 vae.train()
 
 total_step: int = len(dataset)
@@ -120,7 +140,7 @@ for epoch in range(opt.epoches):
     internal_state = {
         'model':opt.model,
         'dataset': opt.dataset,
-        'z_dim': z_dim,
+        'z_dim': opt.z_dim,
         'current_epoch': epoch,
         'best_epoch': best_epoch,
         'best_loss': best_loss,
@@ -131,14 +151,17 @@ for epoch in range(opt.epoches):
 
     save_model(internal_state, models_folder, is_best, epoch, opt.model)
     
-    # if opt.model == 'gamma':
-    #     print("Recons ({})".format(recons_meter.avg),"+ Prior ({})".format(prior_meter.avg),"- Entropy ({})".format(kl_meter.avg), "= Full ({})".format(full_meter.avg))
-    #     train_logger.log({'Epoch':'[%d/%d]'%(epoch,opt.epoches), "Recons": recons_meter.avg, \
-    #             "Prior":prior_meter.avg,"Entropy":kl_meter.avg, "Full": full_meter.avg})
+    if opt.model == 'hierarchical':
+        print("Recons ({})".format(recons_meter.avg),"+ KL Gamma({})".format(kl_meter.avg),"+ KL Gaussian({})".format(kl_normal_meter.avg),\
+            "+ KL Final({})".format(kl_final_meter.avg) , "= Full ({})".format(full_meter.avg))
+        
+        train_logger.log({'Epoch':'[%d/%d]'%(epoch,opt.epoches), "Recons": recons_meter.avg, \
+                "KL Gamma":kl_meter.avg,"KL Gaussian":kl_normal_meter.avg, "KL Final": kl_final_meter.avg, "Full": full_meter.avg})
     
-    # else:
-    print("Recons ({})".format(recons_meter.avg),"+ KL ({})".format(kl_meter.avg), "= Full ({})".format(recons_meter.avg + kl_meter.avg))
-    train_logger.log({'Epoch':'[%d/%d]'%(epoch,opt.epoches), "Recons": recons_meter.avg, \
-            'KL': kl_meter.avg, "Full": recons_meter.avg +  kl_meter.avg})
+    else:
+        print("Recons ({})".format(recons_meter.avg),"+ KL ({})".format(kl_meter.avg), "= Full ({})".format(recons_meter.avg + kl_meter.avg))
+        
+        train_logger.log({'Epoch':'[%d/%d]'%(epoch,opt.epoches), "Recons": recons_meter.avg, \
+                'KL': kl_meter.avg, "Full": recons_meter.avg +  kl_meter.avg})
 
 train_logger.close()
