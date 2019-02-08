@@ -2,12 +2,7 @@ import torch
 from torch import nn
 from torch.autograd import Variable
 from torch.distributions.gamma import Gamma
-from .vae import choose_vae
-
-import sys
-sys.path.append("..")
-
-from utils import recons_loss
+from .vae import choose_vae, recons_loss
 
 def evaluate_gamma_dist(x, alpha, beta):
     loss = -torch.lgamma(alpha) - alpha * torch.log(alpha) \

@@ -1,6 +1,11 @@
 import torch
 from torch import nn
+
 from torch.autograd import Variable
+from torch.nn import functional as F
+
+def recons_loss(recon_x, x):
+    return F.mse_loss(recon_x, x, reduction='sum')
 
 def choose_vae(dataset):
     return MLPVAE if dataset == 'mnist' else ConvVAE

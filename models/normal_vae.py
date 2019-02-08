@@ -6,12 +6,7 @@ from torch.autograd import Variable
 
 import numpy as np
 
-from .vae import choose_vae
-
-import sys
-sys.path.append("..")
-
-from utils import recons_loss
+from .vae import choose_vae, recons_loss
 
 def vae_gaussian_kl_loss(mu, logvar):
     # see Appendix B from VAE paper:
@@ -58,13 +53,13 @@ def compute_gaussian(model, imgs_, metrics):
     # see in bellow for the general formulation:
     # https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence#Multivariate_normal_distributions
     
-    recons_loss = recons_loss(recon_batch, imgs_)
+    likelihood = recons_loss(recon_batch, imgs_)
     kl_loss = vae_gaussian_kl_loss(mu, sigma)
 
-    metrics[0].update(recons_loss.item())
+    metrics[0].update(likelihood.item())
     metrics[1].update(kl_loss.item())
 
-    vae_loss = recons_loss + kl_loss
+    vae_loss = likelihood + kl_loss
 
     return recon_batch, vae_loss
 

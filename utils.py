@@ -7,7 +7,6 @@ from glob import glob
 
 import torch
 from torch import optim
-from torch.nn import functional as F
 from torchvision.utils import make_grid
 
 
@@ -17,9 +16,6 @@ from models.normal_vae import gaussian_vae
 import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
-
-def recons_loss(recon_x, x):
-    return F.mse_loss(recon_x, x, reduction='sum')
 
 def cifar_reshape(img):
     # transpose numpy array to the PIL format, i.e., Channels x W x H
