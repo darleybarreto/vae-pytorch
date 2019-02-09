@@ -26,8 +26,6 @@ class MLPVAE(nn.Module):
         
         self.fc21 = nn.Linear(h_dim, z_dim)
         self.fc22 = nn.Linear(h_dim, z_dim)
-        # self.fc23 = nn.Linear(h_dim, z_dim)
-        # self.fc24 = nn.Linear(h_dim, z_dim)
 
         self.fc3 = nn.Linear(z_dim, h_dim)
         self.fc4 = nn.Linear(h_dim, self.w*self.h)
@@ -63,8 +61,6 @@ class ConvVAE(nn.Module):
         self.fc_bn1 = nn.BatchNorm1d(h_dim)
         self.fc21 = nn.Linear(h_dim, z_dim)
         self.fc22 = nn.Linear(h_dim, z_dim)
-        # self.fc43 = nn.Linear(h_dim, z_dim)
-        # self.fc44 = nn.Linear(h_dim, z_dim)
 
         # Decoder
         self.fc3 = nn.Linear(z_dim, h_dim)
