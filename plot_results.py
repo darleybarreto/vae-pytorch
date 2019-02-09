@@ -1,8 +1,4 @@
-
 # coding: utf-8
-
-# In[1]:
-
 
 import pandas as pd
 import numpy as np
@@ -24,18 +20,11 @@ pgf_with_rc_fonts = {
 }
 sns.set_style(style='white',rc=pgf_with_rc_fonts)
 
-
-# In[2]:
-
-
 def hide_box(ax):
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.get_xaxis().tick_bottom()
     ax.get_yaxis().tick_left()
-
-
-# In[3]:
 
 
 def plot_train(x_n,y_n,x_g,y_g,y_axis,title,file_name):
@@ -63,58 +52,39 @@ def plot_train(x_n,y_n,x_g,y_g,y_axis,title,file_name):
     
     plt.close(fig)
 
-
-# In[4]:
-
-
-train_cifar = glob("data/train_*cifar-10*.log")
-train_mnist = glob("data/train_*mnist*.log") 
-val_cifar = glob("data/train_*cifar-10*.log")
-val_mnist = glob("data/val_*mnist*.log")
-
-
-# In[5]:
-
+train_cifar = sorted(glob("data/train_*cifar-10*.log"))
+train_mnist = sorted(glob("data/train_*mnist*.log")) 
+val_cifar = sorted(glob("data/val_*cifar-10*.log"))
+val_mnist = sorted(glob("data/val_*mnist*.log"))
 
 dict_ = {}
 
+df_train_cifar_n = pd.read_csv(train_cifar[1],sep='\t')
+df_train_cifar_g = pd.read_csv(train_cifar[0],sep='\t')
 
-# In[6]:
-
-
-df_train_cifar_n = pd.read_csv(train_cifar[0],sep='\t')
-df_train_cifar_g = pd.read_csv(train_cifar[1],sep='\t')
-
-df_val_cifar_n = pd.read_csv(val_cifar[0],sep='\t')
-df_val_cifar_g = pd.read_csv(val_cifar[1],sep='\t')
+df_val_cifar_n = pd.read_csv(val_cifar[1],sep='\t')
+df_val_cifar_g = pd.read_csv(val_cifar[0],sep='\t')
 
 dict_['CIFAR-10'] = {"train":(df_train_cifar_n,df_train_cifar_g),
                      "val":(df_val_cifar_n, df_val_cifar_g)}
 
+df_train_mnist_n = pd.read_csv(train_mnist[1],sep='\t')
+df_train_mnist_g = pd.read_csv(train_mnist[0],sep='\t')
 
-# In[7]:
-
-
-df_train_mnist_n = pd.read_csv(train_mnist[0],sep='\t')
-df_train_mnist_g = pd.read_csv(train_mnist[1],sep='\t')
-
-df_val_mnist_n = pd.read_csv(val_mnist[0],sep='\t')
-df_val_mnist_g = pd.read_csv(val_mnist[1],sep='\t')
+df_val_mnist_n = pd.read_csv(val_mnist[1],sep='\t')
+df_val_mnist_g = pd.read_csv(val_mnist[0],sep='\t')
 
 dict_['MNIST'] = {"train": (df_train_mnist_n,df_train_mnist_g),
                   "val": (df_val_mnist_n, df_val_mnist_g)}
 
-
-# In[8]:
-
-
 for dataset in dict_:
     for stage in dict_[dataset]:
         normal, gamma = dict_[dataset][stage]
+        
         for loss in ["KL", "Recons"]:
             y_axis = "$D_{KL}(q_{\phi}||p_{\\theta})$" if loss == "KL" else "$p_{\\theta}(x|z)$"
             title = "{} ({})".format(dataset,stage)
-            file_name = "./images/{}_{}_{}".format(dataset.lower().replace("-","_"),stage,loss.lower())
+            file_name = "./data/{}_{}_{}".format(dataset.lower().replace("-","_"),stage,loss.lower())
 
-            plot_train(normal.Epoch.values,normal[loss].values,                       gamma.Epoch.values,gamma[loss].values,                       y_axis, title, file_name)
+            plot_train(normal.Epoch.values,normal[loss].values, gamma.Epoch.values,gamma[loss].values,y_axis, title, file_name)
 
