@@ -96,7 +96,7 @@ models_folder = os.path.join(data_folder, "models")
 if not os.path.isdir(models_folder):
     os.makedirs(models_folder)
 
-print("{} model choosed.\n".format(opt.model))
+print("{} model chosen.\n".format(opt.model))
 
 vae = Model(vae_model,z_dim=opt.z_dim)
 

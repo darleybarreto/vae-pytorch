@@ -14,7 +14,6 @@ def val(epoch, model, generator, compute_vae, metrics, folders, opt, logger):
 
     with torch.no_grad():
         for imgs, _ in generator:  # doing this way we get more performance, since we generate one batch at a time
-            model.zero_grad()
 
             imgs_ = imgs.squeeze(0)
 
