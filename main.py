@@ -25,8 +25,8 @@ parser.add_argument('--model', type=str, default="normal",
 parser.add_argument('--dataset', type=str, default="mnist",
 					help='Dataset (cifar-10 or mnist)')
 
-parser.add_argument('--epoches', type=int, default=1001,
-					help='number of epoches')
+parser.add_argument('--epochs', type=int, default=1001,
+					help='number of epochs')
 
 parser.add_argument('--b_size', type=int, default=128,
 					help='batch size')                    
@@ -103,7 +103,7 @@ vae = Model(vae_model,z_dim=opt.z_dim)
 best_loss = float("inf")
 best_epoch = -1
 
-for epoch in range(opt.epoches):
+for epoch in range(opt.epochs):
 
     for m in metrics:
         m.reset()

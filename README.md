@@ -15,7 +15,7 @@ $ python3 main.py
 
 Example 2:
 ```bash
-$ python3 main --model normal --epoches 5000
+$ python3 main --model normal --epochs 5000
 ```
 
 Example 3:
@@ -31,13 +31,13 @@ $ python3 main --model gamma --dataset mnist --z_dim 5
 ### Usage
 
 ```
-usage: main.py [-h] [--model M] [--epoches N] [--dataset D]
+usage: main.py [-h] [--model M] [--epochs N] [--dataset D]
                [--b_size  B] [--z_dim   Z]
 
 optional arguments:
   -h, --help        show this help message and exit
   --model   M       vae model to use: gamma | normal, default is normal
-  --epoches N       number of total epochs to run, default is 10000
+  --epochs N        number of total epochs to run, default is 10000
   --dataset D       dataset to run experiments (cifar-10 or mnist)
   --b_size  B       batch size
   --z_dim   Z       size of the latent space

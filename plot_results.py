@@ -40,7 +40,7 @@ def plot_train(x_n,y_n,x_g,y_g,y_axis,title,file_name):
     
     ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),ncol=2,prop={'size': 18},labelspacing=0.,handletextpad=0.3)
 
-    plt.xlabel('Epoches',fontsize=16, labelpad=10,x=0.5)
+    plt.xlabel('Epochs',fontsize=16, labelpad=10,x=0.5)
     plt.xticks(fontsize=16,rotation=30)
     plt.ylabel(y_axis,fontsize=20, labelpad=5)
     plt.yticks(fontsize=16)
