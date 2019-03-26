@@ -4,13 +4,13 @@ import argparse
 import numpy as np
 
 import torch
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, TensorDataset
 from torchvision import datasets as dsets, transforms
 
 from models.gamma_vae import gamma_vae, compute_gamma
 from models.normal_vae import gaussian_vae, compute_gaussian
 
-from utils import AverageMeter, Logger, Model, ReshapeTransform, save_model
+from utils import AverageMeter, Logger, Model, ReshapeTransform, save_model, binarized_mnist_fixed_binarization
 
 from train import train
 from val import val
@@ -23,7 +23,7 @@ parser.add_argument('--model', type=str, default="normal",
 					help='VAE type (normal or gamma)')
 
 parser.add_argument('--dataset', type=str, default="mnist",
-					help='Dataset (cifar-10 or mnist)')
+					help='Dataset (cifar-10, b_mnist or mnist)')
 
 parser.add_argument('--epochs', type=int, default=1001,
 					help='number of epochs')
@@ -37,6 +37,7 @@ parser.add_argument('--z_dim', type=int, default=4,
 opt = parser.parse_args()
 
 assert opt.model in ['normal', 'gamma'], "Model {} is not supported.".format(opt.model)
+assert opt.dataset in ['cifar-10','mnist','b_mnist'], "Dataset {} is not supported".format(opt.dataset)
 
 data_folder = os.path.join(".","data")
 if not os.path.isdir(data_folder):
@@ -59,9 +60,16 @@ elif opt.dataset == 'mnist':
     v_dataset = dsets.MNIST(root=os.path.join(".",'data'), train=False, download=True,
         transform=transforms.Compose([transforms.ToTensor(), ReshapeTransform((-1,))]))
 
-    if os.path.exists(os.path.join(".","data","raw")):
-        shutil.rmtree(os.path.join(".","data","raw"))
+    if os.path.exists(os.path.join(".","data","MNIST","raw")):
+        shutil.rmtree(os.path.join(".","data","MNIST","raw"))
 
+elif opt.dataset == 'b_mnist':
+    bpath = os.path.join(".","data","b_mnist")
+
+    train_data, validation_data, test_data = binarized_mnist_fixed_binarization(bpath)
+
+    t_dataset = TensorDataset(torch.from_numpy(train_data))
+    v_dataset = TensorDataset(torch.from_numpy(validation_data))
 
 t_generator = DataLoader(t_dataset, batch_size=opt.b_size, num_workers=8, shuffle=True)
 v_generator = DataLoader(v_dataset, batch_size=opt.b_size, num_workers=8, shuffle=True)
@@ -76,7 +84,7 @@ logger_list = ["Epoch","Recons","KL","Full"]
 suffix_logger = "{}_{}_{}_{}".format(opt.model,opt.dataset,opt.b_size,opt.z_dim)
 
 train_logger = Logger(os.path.join(data_folder,'train_{}.log'.format(suffix_logger)),logger_list)
-val_logger = Logger(os.path.join(data_folder,'val_{}.log'.format(suffix_logger)),logger_list)
+val_logger = Logger(os.path.join(data_folder,'val_{}.log'.format(suffix_logger)),logger_list + ["MLikeli"])
 
 if opt.model == 'normal':
     vae_model = gaussian_vae(opt.dataset)
@@ -110,15 +118,14 @@ for epoch in range(opt.epochs):
 
     print("====== Epoch {} ======".format(epoch))
     train(epoch, vae, t_generator, compute_vae, metrics, (models_folder, maps_folder), opt, train_logger)
-    vae_loss = val(epoch, vae, v_generator, compute_vae, metrics, (models_folder, maps_folder), opt, val_logger)
+    vae_loss,log_p_x = val(epoch, vae, v_generator, compute_vae, metrics, (models_folder, maps_folder), opt, val_logger)
     
     is_best = False
     if vae_loss < best_loss:
         best_loss = vae_loss
         best_epoch = epoch
         is_best = True
-       
-    
+
     internal_state = {
         'model':opt.model,
         'dataset': opt.dataset,
@@ -133,6 +140,5 @@ for epoch in range(opt.epochs):
 
     save_model(internal_state, models_folder, is_best, epoch, opt.model)
     
-
 train_logger.close()
 val_logger.close()

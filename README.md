@@ -60,22 +60,29 @@ optional arguments:
 #### Mnist validation samples (Gamma VAE)
 ![](images/qualitative/val_gamma_mnist.png)
 
+#### Binary Mnist validation samples (Gaussian VAE)
+![](images/qualitative/val_normal_b_mnist.png)
+
+#### Binary  Mnist validation samples (Gamma VAE)
+![](images/qualitative/val_gamma_b_mnist.png)
+
 ### Quantitative results
 
 
 #### Train
 
-|      | CIFAR-10      | MNIST         | 
-|:-----| ------------- |--------------:|
-|KL    | <img src="images/quantitative/cifar_10_train_kl.png" width="300">| <img src="images/quantitative/mnist_train_kl.png" width="300"> |
-|Recons| <img src="images/quantitative/cifar_10_train_recons.png" width="300">| <img src="images/quantitative/mnist_train_recons.png" width="300"> |
+|      | CIFAR-10      | MNIST         | Binary MNIST  | 
+|:-----| ------------- |---------------|---------------|
+|KL    | <img src="images/quantitative/cifar_10_train_kl.png" width="300">| <img src="images/quantitative/mnist_train_kl.png" width="300"> | <img src="images/quantitative/binary_mnist_train_kl.png" width="300"> |
+|Recons| <img src="images/quantitative/cifar_10_train_recons.png" width="300">| <img src="images/quantitative/mnist_train_recons.png" width="300"> | <img src="images/quantitative/binary_mnist_train_recons.png" width="300"> |
 
 #### Validation
 
-|      | CIFAR-10      | MNIST         | 
-|:-----| ------------- |--------------:|
-|KL    | <img src="images/quantitative/cifar_10_val_kl.png" width="300">| <img src="images/quantitative/mnist_val_kl.png" width="300"> |
-|Recons| <img src="images/quantitative/cifar_10_val_recons.png" width="300">| <img src="images/quantitative/mnist_val_recons.png" width="300"> |
+|            | CIFAR-10      | MNIST         | Binary MNIST  |
+|:-----------| ------------- |---------------|---------------|
+|KL          | <img src="images/quantitative/cifar_10_val_kl.png" width="300">| <img src="images/quantitative/mnist_val_kl.png" width="300"> | <img src="images/quantitative/binary_mnist_val_kl.png" width="300"> |
+|Recons      | <img src="images/quantitative/cifar_10_val_recons.png" width="300">| <img src="images/quantitative/mnist_val_recons.png" width="300"> | <img src="images/quantitative/binary_mnist_val_recons.png" width="300"> |
+|M Likelihood| <img src="images/quantitative/cifar_10_val_mlikeli.png" width="300">| <img src="images/quantitative/mnist_val_mlikeli.png" width="300"> | <img src="images/quantitative/binary_mnist_val_mlikeli.png" width="300">
 
 ## Acknowledgments
 

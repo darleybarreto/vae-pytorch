@@ -5,10 +5,12 @@ from torch.autograd import Variable
 from torch.nn import functional as F
 
 def recons_loss(recon_x, x):
-    return F.mse_loss(recon_x, x, reduction='sum')
+    d = 1 if len(recon_x.shape) == 2 else (1,2,3)
+
+    return torch.sum(F.mse_loss(recon_x, x, reduction='none'),dim=d)
 
 def choose_vae(dataset):
-    return MLPVAE if dataset == 'mnist' else ConvVAE
+    return MLPVAE if dataset in ['mnist','b_mnist'] else ConvVAE
 
 class MLPVAE(nn.Module):
     """
