@@ -9,6 +9,7 @@ import torch
 from torch import optim
 from torchvision.utils import make_grid
 
+import urllib.request as request
 
 from models.gamma_vae import gamma_vae
 from models.normal_vae import gaussian_vae
@@ -17,7 +18,44 @@ import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
 
-def cifar_reshape(img):
+def binarized_mnist_fixed_binarization(DATASETS_DIR):
+    """Get the binarized MNIST dataset and convert to hdf5.
+    From https://github.com/altosaar/proximity_vi/blob/master/get_binary_mnist.py
+    """
+
+    subdatasets = ['train', 'valid', 'test']
+    data = {}
+
+    if not os.path.exists(DATASETS_DIR):
+        os.makedirs(DATASETS_DIR)
+
+        def lines_to_np_array(lines):
+            return np.array([[int(i) for i in line.split()] for line in lines])
+
+        for subdataset in subdatasets:
+            filename = 'binarized_mnist_{}.amat'.format(subdataset)
+            url = 'http://www.cs.toronto.edu/~larocheh/public/datasets/binarized_mnist/binarized_mnist_{}.amat'.format(
+                subdataset)
+            local_filename = os.path.join(DATASETS_DIR, filename)
+            request.urlretrieve(url, local_filename)
+
+            with open(os.path.join(DATASETS_DIR, filename)) as f:
+                lines = f.readlines()
+            
+            os.remove(local_filename)
+            data[subdataset] = lines_to_np_array(lines).astype('float32')
+            np.savez_compressed(local_filename.split(".amat")[0],data=data[subdataset])
+
+    else:
+        for subdataset in subdatasets:
+            filename = 'binarized_mnist_{}.npz'.format(subdataset)
+            local_filename = os.path.join(DATASETS_DIR, filename)
+            data[subdataset] = np.load(local_filename)
+
+    return data['train']['data'], data['valid']['data'], data['test']['data']
+
+
+def reshape(img):
     # transpose numpy array to the PIL format, i.e., Channels x W x H
     out = np.transpose(img, (1,2,0))
     return (out * 255).astype(np.uint8)
@@ -27,7 +65,7 @@ def save_attn_map(attns, imgs, info_saving):
     # append images and attention weights
     imgs = imgs.clone()
 
-    if dataset == 'mnist':
+    if dataset in ['mnist','b_mnist']:
         attns = attns.view(-1,1,28,28)
         imgs = imgs.view(-1,1,28,28)
     
@@ -39,7 +77,7 @@ def save_attn_map(attns, imgs, info_saving):
 
     fig, ax = plt.subplots(figsize = tuple(size))
     ax.axis("off")
-    ax.imshow(cifar_reshape(npimg))
+    ax.imshow(reshape(npimg))
 
     fig.savefig("{}.pdf".format(path),bbox_inches='tight')
     plt.close(fig)
@@ -100,8 +138,8 @@ class Model(object):
         return z.data
 
     @staticmethod
-    def load(path: str):
-        checkpoint = torch.load(path)
+    def load(path: str, map_location='cuda'):
+        checkpoint = torch.load(path,map_location=map_location)
         
         dataset = checkpoint['dataset']
         model = checkpoint['model']

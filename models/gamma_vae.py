@@ -25,7 +25,7 @@ def vae_gamma_kl_loss(a,b,c,d):
     c = 1/c
     losses = I_function(c,d,c,d) - I_function(a,b,c,d)
 
-    return torch.sum(losses)
+    return torch.sum(losses,dim=1)
 
 def compute_gamma(model, imgs_, metrics):
     recon_batch, z, alpha, beta = model(imgs_)
@@ -39,8 +39,8 @@ def compute_gamma(model, imgs_, metrics):
     kl_gamma = vae_gamma_kl_loss(alpha, beta, torch.Tensor([2.]), torch.Tensor([1.])) #prior p(z|alpha,beta)) = p(z|(2,1)) 
     vae_loss = likelihood + kl_gamma
 
-    metrics[0].update(likelihood.item(),imgs_.size(0))
-    metrics[1].update(kl_gamma.item(),imgs_.size(0))
+    metrics[0].update(likelihood.sum().item(),imgs_.size(0))
+    metrics[1].update(kl_gamma.sum().item(),imgs_.size(0))
 
     return recon_batch, vae_loss
 

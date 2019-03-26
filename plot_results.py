@@ -28,6 +28,10 @@ def hide_box(ax):
 
 
 def plot_train(x_n,y_n,x_g,y_g,y_axis,title,file_name):
+    """
+    x_n,y_n (x,y) values of the gaussian outputs
+    x_g,y_g (x,y) values of the gamma outputs
+    """
     fig, ax = plt.subplots(figsize=(10,8))
 
     ax.plot(x_n,y_n,"#f03b20",linestyle='-',linewidth=1,label='Gaussian')
@@ -48,14 +52,17 @@ def plot_train(x_n,y_n,x_g,y_g,y_axis,title,file_name):
     plt.title(title,fontsize=25,x=0.9,y=0.8)
     hide_box(ax)
     
-    fig.savefig('{}.pdf'.format(file_name),bbox_inches="tight")
+    fig.savefig('{}.png'.format(file_name),bbox_inches="tight")
     
     plt.close(fig)
 
 train_cifar = sorted(glob("data/train_*cifar-10*.log"))
-train_mnist = sorted(glob("data/train_*mnist*.log")) 
+train_mnist = sorted(glob("data/train_*mnist*.log"))
+train_bmnist = sorted(glob("data/train_*b_mnist*.log"))
+
 val_cifar = sorted(glob("data/val_*cifar-10*.log"))
 val_mnist = sorted(glob("data/val_*mnist*.log"))
+val_bmnist = sorted(glob("data/val_*b_mnist*.log"))
 
 dict_ = {}
 
@@ -77,14 +84,25 @@ df_val_mnist_g = pd.read_csv(val_mnist[0],sep='\t')
 dict_['MNIST'] = {"train": (df_train_mnist_n,df_train_mnist_g),
                   "val": (df_val_mnist_n, df_val_mnist_g)}
 
+df_train_bmnist_n = pd.read_csv(train_bmnist[1],sep='\t')
+df_train_bmnist_g = pd.read_csv(train_bmnist[0],sep='\t')
+
+df_val_bmnist_n = pd.read_csv(val_bmnist[1],sep='\t')
+df_val_bmnist_g = pd.read_csv(val_bmnist[0],sep='\t')
+
+dict_['Binary MNIST'] = {"train": (df_train_bmnist_n,df_train_bmnist_g),
+                  "val": (df_val_bmnist_n, df_val_bmnist_g)}
+
 for dataset in dict_:
     for stage in dict_[dataset]:
+        metrics = ["KL", "Recons", "MLikeli"] if stage == 'val' else ["KL", "Recons"]
         normal, gamma = dict_[dataset][stage]
         
-        for loss in ["KL", "Recons"]:
-            y_axis = "$D_{KL}(q_{\phi}||p_{\\theta})$" if loss == "KL" else "$p_{\\theta}(x|z)$"
+        for loss in metrics:
+            y_axis = "$D_{KL}(q_{\phi}||p_{\\theta})$" if loss == "KL" else "$p_{\\theta}(x|z)$" if loss == "Recons" else "Marginal Likelihood"
+                
             title = "{} ({})".format(dataset,stage)
-            file_name = "./data/{}_{}_{}".format(dataset.lower().replace("-","_"),stage,loss.lower())
+            file_name = "./data/{}_{}_{}".format(dataset.replace(" ","_").lower().replace("-","_"),stage,loss.lower())
 
             plot_train(normal.Epoch.values,normal[loss].values, gamma.Epoch.values,gamma[loss].values,y_axis, title, file_name)
 

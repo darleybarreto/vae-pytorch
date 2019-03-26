@@ -12,7 +12,8 @@ def train(epoch, model, generator, compute_vae, metrics, folders, opt, logger):
     model.train()
     print("Training:")
 
-    for imgs, _ in generator:  # doing this way we get more performance, since we generate one batch at a time
+    for batch_data in generator:  # doing this way we get more performance, since we generate one batch at a time
+        imgs = batch_data[0]
         model.zero_grad()
 
         imgs_ = imgs.squeeze(0)
@@ -21,6 +22,8 @@ def train(epoch, model, generator, compute_vae, metrics, folders, opt, logger):
             imgs_ = imgs_.cuda(non_blocking=True)
 
         recon_batch, vae_loss = compute_vae(model, imgs_, metrics)
+        vae_loss = torch.sum(vae_loss)
+        
         vae_loss.backward()
         model.step()
         

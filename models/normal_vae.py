@@ -13,7 +13,7 @@ def vae_gaussian_kl_loss(mu, logvar):
     # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
     # https://arxiv.org/abs/1312.6114
     # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
-    KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+    KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp(),dim=1)
 
     return KLD
 
@@ -56,9 +56,9 @@ def compute_gaussian(model, imgs_, metrics):
     likelihood = recons_loss(recon_batch, imgs_)
     kl_loss = vae_gaussian_kl_loss(mu, sigma)
 
-    metrics[0].update(likelihood.item())
-    metrics[1].update(kl_loss.item())
-
+    metrics[0].update(likelihood.sum().item())
+    metrics[1].update(kl_loss.sum().item())
+    
     vae_loss = likelihood + kl_loss
 
     return recon_batch, vae_loss
@@ -75,7 +75,7 @@ def gaussian_vae(vae_name: str):
             #mu, sigma
             return self.fc21(fc1), self.softplus(self.fc22(fc1))
 
-        def reparameterize(self, mu, logvar):
+        def reparameterize(self, mu, sigma):
             """THE REPARAMETERIZATION IDEA:
             
             Commented and type annotated by Charl Botha <cpbotha@vxlabs.com>
@@ -105,22 +105,9 @@ def gaussian_vae(vae_name: str):
             """
 
             if self.training:
-                # multiply log variance with 0.5, then in-place exponent
-                # yielding the standard deviation
-                std = logvar.mul(0.5).exp_()  # type: Variable
-                # - std.data is the [batche_size,ZDIMS] tensor that is wrapped by std
-                # - so eps is [batche_size,ZDIMS] with all elements drawn from a mean 0
-                #   and stddev 1 normal distribution that is batche_size samples
-                #   of random ZDIMS-float vectors
-                eps = Variable(std.data.new(std.size()).normal_(),requires_grad=False)
-                # - sample from a normal distribution with standard
-                #   deviation = std and mean = mu by multiplying mean 0
-                #   stddev 1 sample with desired std and mu, see
-                #   https://stats.stackexchange.com/a/16338
-                # - so we have batche_size sets (the batch) of random ZDIMS-float
-                #   vectors sampled from normal distribution with learned
-                #   std and mu for the current input
-                return eps.mul(std).add_(mu)
+                eps = torch.randn_like(sigma)
+                z = mu + sigma * eps
+                return z
 
             else:
                 # During inference, we simply spit out the mean of the
